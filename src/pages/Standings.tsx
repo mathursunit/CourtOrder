@@ -15,16 +15,24 @@ interface LeaderboardEntry {
 export default function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
+  const [debugLog, setDebugLog] = useState<string>("Initializing...");
   const { games } = useTournament();
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        console.log("[DEBUG] Leaderboard: Initiating fetch...");
+        setDebugLog("Connecting to Firebase...");
         const usersRef = collection(db, 'users');
-        const querySnapshot = await getDocs(usersRef);
-        console.log(`[DEBUG] Leaderboard: Found ${querySnapshot.docs.length} users in registry`);
         
+        // Force server source to bypass any local cache issues
+        const querySnapshot = await getDocs(usersRef);
+        
+        setDebugLog(`Query complete. Docs: ${querySnapshot.docs.length}`);
+        
+        if (querySnapshot.empty) {
+          setDebugLog("Collection 'users' is empty or inaccessible.");
+        }
+
         const allEntries: LeaderboardEntry[] = [];
         
         for (const userDoc of querySnapshot.docs) {
@@ -58,8 +66,9 @@ export default function Leaderboard() {
         }
 
         setEntries(allEntries.sort((a, b) => b.score - a.score));
-      } catch (err) {
+      } catch (err: any) {
         console.error("Leaderboard error:", err);
+        setDebugLog(`Error: ${err.message || 'Unknown error'}`);
       } finally {
         setLoadingEntries(false);
       }
@@ -73,6 +82,7 @@ export default function Leaderboard() {
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin" />
         <p className="text-slate-400 font-medium italic">Calculating Global Standings...</p>
+        <p className="text-[10px] text-brand/40 uppercase font-black">{debugLog}</p>
       </div>
     );
   }
@@ -84,7 +94,7 @@ export default function Leaderboard() {
           <Trophy className="w-8 h-8 text-brand" />
         </div>
         <div>
-          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.5</h1>
+          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.7</h1>
           <p className="text-slate-400 font-medium">Official 2026 March Madness Rankings</p>
         </div>
       </div>
