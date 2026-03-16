@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export interface Team {
@@ -15,8 +15,8 @@ export interface Game {
   region: string;
   teamA_id?: string | null;
   teamB_id?: string | null;
-  childA_id?: string | null; // ID of the game that produces teamA
-  childB_id?: string | null; // ID of the game that produces teamB
+  childA_id?: string | null;
+  childB_id?: string | null;
   winner_id: string | null;
   slot_index: number;
 }
@@ -30,6 +30,7 @@ export function useTournament(year: string = '2026') {
     const teamsRef = collection(db, 'tournaments', year, 'teams');
     const gamesRef = collection(db, 'tournaments', year, 'games');
 
+    // Fetch teams
     const unsubTeams = onSnapshot(teamsRef, (snapshot) => {
       const teamsList: Team[] = [];
       snapshot.forEach(doc => {
@@ -38,13 +39,24 @@ export function useTournament(year: string = '2026') {
       setTeams(teamsList);
     });
 
-    const unsubGames = onSnapshot(query(gamesRef, orderBy('round'), orderBy('slot_index')), (snapshot) => {
+    // Fetch ALL games for the tournament and handle sorting/filtering in-memory
+    // This avoids needing complex composite indexes for every query permutation
+    const unsubGames = onSnapshot(gamesRef, (snapshot) => {
       const gamesList: Game[] = [];
       snapshot.forEach(doc => {
         gamesList.push(doc.data() as Game);
       });
+      
+      // Sort: Round first, then slot_index
+      gamesList.sort((a, b) => {
+        if (a.round !== b.round) return a.round - b.round;
+        return (a.slot_index || 0) - (b.slot_index || 0);
+      });
+
       setGames(gamesList);
-      setLoading(false);
+      if (gamesList.length > 0) {
+        setLoading(false);
+      }
     });
 
     return () => {
