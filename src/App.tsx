@@ -52,7 +52,6 @@ function App() {
   }, [selections, user]);
 
   const regions = ['East', 'West', 'South', 'Midwest'];
-
   const userScore = useMemo(() => calculateTotalScore(selections, games), [selections, games]);
 
   const getRegionGames = (region: string, round: number) => {
@@ -65,178 +64,160 @@ function App() {
     return teams.find(t => t.id === id);
   };
 
-  const handleQuickFill = (type: 'random' | 'higher-seed') => {
-    if (type === 'higher-seed') {
-      const newPicks: Record<string, string> = {};
-      const r1Games = games.filter(g => g.round === 1);
-      r1Games.forEach(g => {
-        const tA = getTeamById(g.teamA_id);
-        const tB = getTeamById(g.teamB_id);
-        if (tA && tB) {
-          newPicks[g.id] = (tA.seed || 16) <= (tB.seed || 16) ? tA.id : tB.id;
-        }
-      });
-      setSelections({...selections, ...newPicks});
-    }
+  const handleQuickFill = () => {
+    const newPicks: Record<string, string> = {};
+    const r1Games = games.filter(g => g.round === 1);
+    r1Games.forEach(g => {
+      const tA = getTeamById(g.teamA_id);
+      const tB = getTeamById(g.teamB_id);
+      if (tA && tB) {
+        newPicks[g.id] = (tA.seed || 16) <= (tB.seed || 16) ? tA.id : tB.id;
+      }
+    });
+    setSelections({...selections, ...newPicks});
   };
+
+  // Bracket Layout Helper
+  const MATCHUP_HEIGHT = 110; // Matchup card height + margin
+  const getRoundSpacing = (round: number) => Math.pow(2, round - 1) * MATCHUP_HEIGHT;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="min-h-screen bg-[#0A192F] flex items-center justify-center">
         <div className="flex flex-col items-center gap-6">
           <div className="w-16 h-16 border-4 border-brand border-t-transparent rounded-full animate-spin" />
-          <div className="text-center">
-            <h2 className="text-2xl font-display font-black text-white italic">Initializing CourtOrder</h2>
-            <p className="text-slate-500 font-medium">Fetching 2026 Tournament Data...</p>
-          </div>
+          <h2 className="text-2xl font-display font-black text-white italic">SYCHRONIZING FEED...</h2>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <header className="sticky top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-glass-border px-6 py-4">
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-50 bg-[#0A192F]/80 backdrop-blur-md border-b border-white/10 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('bracket')}>
-              <Trophy className="w-8 h-8 text-brand drop-shadow-[0_0_8px_rgba(0,242,255,0.4)]" />
-              <span className="text-2xl font-display font-black tracking-tighter italic text-white uppercase leading-none">
-                CourtOrder
-              </span>
+              <Trophy className="w-8 h-8 text-brand" />
+              <span className="text-2xl font-display font-black italic text-white leading-none">COURTORDER</span>
             </div>
-            
-            <nav className="hidden md:flex items-center gap-1">
-              <button 
-                onClick={() => setView('bracket')}
-                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${view === 'bracket' ? 'bg-brand/10 text-brand' : 'text-slate-400 hover:text-white'}`}
-              >
-                BRACKET
-              </button>
-              <button 
-                onClick={() => setView('leaderboard')}
-                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${view === 'leaderboard' ? 'bg-brand/10 text-brand' : 'text-slate-400 hover:text-white'}`}
-              >
-                LEADERBOARD
-              </button>
-              <button 
-                onClick={() => setView('admin')}
-                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${view === 'admin' ? 'bg-brand/10 text-brand' : 'text-slate-400 hover:text-white'}`}
-              >
-                ADMIN
-              </button>
+            <nav className="hidden md:flex items-center gap-4">
+              {['BRACKET', 'LEADERBOARD', 'ADMIN'].map(nav => (
+                <button 
+                  key={nav}
+                  onClick={() => setView(nav.toLowerCase() as ViewMode)}
+                  className={`text-xs font-black tracking-[0.2em] transition-all ${view === nav.toLowerCase() ? 'text-brand' : 'text-slate-500 hover:text-white'}`}
+                >
+                  {nav}
+                </button>
+              ))}
             </nav>
           </div>
-
           <div className="flex items-center gap-4">
             {user ? (
-              <div className="flex items-center gap-4 bg-white/5 border border-white/10 px-4 py-1.5 rounded-full">
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black text-brand uppercase leading-none mb-1">{userScore} PTS</span>
-                  <span className="text-sm font-black text-white leading-none">{user.displayName?.split(' ')[0]}</span>
-                </div>
-                <button onClick={() => logout()} className="p-1.5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-full transition-colors">
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
+               <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2 rounded-full">
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-brand leading-none mb-1">{userScore} PTS</p>
+                    <p className="text-xs font-black text-white leading-none">{user.displayName}</p>
+                  </div>
+                  <button onClick={() => logout()} className="p-1 hover:text-rose-400 transition-colors">
+                    <LogOut className="w-4 h-4" />
+                  </button>
+               </div>
             ) : (
-              <button onClick={() => login()} className="px-6 py-2 bg-brand text-slate-900 font-black rounded-lg text-sm hover:scale-105 transition-all shadow-neon">
-                LOGIN TO SAVE
-              </button>
+              <button onClick={() => login()} className="btn-primary text-xs uppercase tracking-widest">LOG IN</button>
             )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto mt-8">
+      <main className="p-8">
         {view === 'admin' ? (
           <Admin />
         ) : view === 'leaderboard' ? (
           <Leaderboard />
         ) : (
-          <div className="px-4">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-brand/20 text-brand text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest border border-brand/20 animate-pulse">
-                    Selection Sunday Live
-                  </span>
-                </div>
-                <h1 className="text-5xl font-display font-black text-white italic tracking-tighter uppercase leading-[0.9]">
-                  2026 March Madness<br/>
-                  <span className="text-brand">Championship Bracket</span>
-                </h1>
+          <div className="max-w-[1440px] mx-auto">
+            {/* Region & Header */}
+            <div className="mb-12">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="bg-brand/10 text-brand text-[10px] font-black px-2 py-1 border border-brand/20 rounded">LIVE BRACKET</span>
+                <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">{activeRegion} Regional</span>
               </div>
-
-              <div className="flex items-center gap-3">
-                <button onClick={() => handleQuickFill('higher-seed')} className="btn-secondary flex items-center gap-2 text-xs uppercase font-black tracking-widest">
-                  <Zap className="w-4 h-4 text-amber-400" /> Chalk Fill
-                </button>
-                <button onClick={() => setSelections({})} className="btn-secondary flex items-center gap-2 text-xs uppercase font-black tracking-widest text-rose-400">
-                  Reset
+              <div className="flex justify-between items-end">
+                <div className="flex gap-4">
+                  {regions.map(r => (
+                    <button 
+                      key={r}
+                      onClick={() => setActiveRegion(r)}
+                      className={`text-3xl font-display font-black italic transition-all ${activeRegion === r ? 'text-white' : 'text-slate-700 hover:text-slate-500'}`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={handleQuickFill} className="btn-secondary text-xs flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-brand" /> AUTO FILL CHALK
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-4 scrollbar-hide">
-              {regions.map(r => (
-                <button
-                  key={r}
-                  onClick={() => setActiveRegion(r)}
-                  className={`px-8 py-3 rounded-xl font-display font-black text-sm tracking-widest uppercase transition-all whitespace-nowrap ${
-                    activeRegion === r 
-                    ? 'bg-brand text-slate-900 shadow-neon-strong' 
-                    : 'bg-white/5 text-slate-500 border border-white/5 hover:border-brand/20'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
+            {/* Bracket Tree */}
+            <div className="relative overflow-x-auto pb-20 scrollbar-hide min-h-[900px]">
+              <div className="flex items-start gap-0">
+                {[1, 2, 3, 4].map((round, rIndex) => (
+                  <div key={round} className="w-[320px] shrink-0 pt-10">
+                    <div className="px-6 mb-8">
+                      <p className="text-[10px] font-black text-brand uppercase tracking-widest opacity-50 mb-1">Round {round}</p>
+                      <h3 className="text-xl font-display font-black italic text-white uppercase italic">
+                        {round === 1 ? 'Round of 64' : round === 2 ? 'Round of 32' : round === 3 ? 'Sweet 16' : 'Elite 8'}
+                      </h3>
+                    </div>
 
-            <div className="flex gap-12 overflow-x-auto pb-12 items-start scrollbar-hide">
-              {[1, 2, 3, 4].map(round => (
-                <div key={round} className="flex flex-col gap-8 flex-shrink-0 min-w-[256px]">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-black text-brand uppercase tracking-[0.3em]">Round</span>
-                    <h3 className="text-2xl font-display font-black italic text-white leading-none">
-                      {round === 1 ? 'Round of 64' : round === 2 ? 'Round of 32' : round === 3 ? 'Sweet 16' : 'Elite 8'}
-                    </h3>
+                    <div className="flex flex-col h-full relative" style={{ gap: `${getRoundSpacing(round) - MATCHUP_HEIGHT}px`, marginTop: `${(getRoundSpacing(round) / 2) - (MATCHUP_HEIGHT / 2)}px` }}>
+                      {getRegionGames(activeRegion, round).map((game, gIndex) => {
+                        const teamA = getTeamById(selections[game.childA_id || ''] || game.teamA_id);
+                        const teamB = getTeamById(selections[game.childB_id || ''] || game.teamB_id);
+                        
+                        return (
+                          <div key={game.id} className="relative bracket-game-container px-6">
+                            <Matchup 
+                              gameId={game.id} 
+                              teamA={teamA} 
+                              teamB={teamB}
+                              winnerId={game.winner_id || undefined}
+                            />
+                            
+                            {/* Connectors to next round */}
+                            {round < 4 && (
+                              <div className="bracket-connector-out" style={{ right: '0', top: '50%' }} />
+                            )}
+                            
+                            {/* Inbound vertical connectors */}
+                            {round > 1 && (
+                              <>
+                                <div className="bracket-connector-in" style={{ left: '-24px', top: '50%' }} />
+                                <div className="bracket-connector-vertical" 
+                                  style={{ 
+                                    left: '-24px', 
+                                    height: `${getRoundSpacing(round-1)}px`,
+                                    top: gIndex % 2 === 0 ? '50%' : 'auto',
+                                    bottom: gIndex % 2 === 1 ? '50%' : 'auto'
+                                  }} 
+                                />
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className={`flex flex-col justify-around h-full gap-4 ${round === 2 ? 'mt-12' : round === 3 ? 'mt-32' : round === 4 ? 'mt-64' : ''}`}>
-                    {getRegionGames(activeRegion, round).map(game => {
-                      const teamA = getTeamById(selections[game.childA_id || ''] || game.teamA_id);
-                      const teamB = getTeamById(selections[game.childB_id || ''] || game.teamB_id);
-                      return (
-                        <Matchup 
-                          key={game.id} 
-                          gameId={game.id} 
-                          teamA={teamA} 
-                          teamB={teamB}
-                          winnerId={game.winner_id || undefined}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         )}
       </main>
-
-      <footer className="fixed bottom-0 left-0 right-0 py-2 px-6 bg-surface/90 border-t border-glass-border flex justify-between items-center text-[10px] uppercase font-black tracking-widest z-50">
-        <div className="flex items-center gap-4 text-slate-500">
-          <span>2026 CourtOrder</span>
-          <span className="w-1 h-1 bg-brand rounded-full"></span>
-          <span>Broadcast Edition v2.0</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-brand">Live Feed:</span>
-          <span className="text-slate-200">courtorder.sunitmathur.com</span>
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-        </div>
-      </footer>
     </div>
   );
 }
