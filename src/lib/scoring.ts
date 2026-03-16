@@ -9,22 +9,17 @@ export const ROUND_WEIGHTS: Record<number, number> = {
 
 /**
  * Calculates the total score for a bracket by comparing user selections
- * against the official master results.
- * 
- * @param userSelections - Map of gameId to teamId picked by the user
- * @param masterResults - Map of gameId to teamId that actually won
- * @param games - List of all games to determine rounds/weights
+ * against the official master results stored in the games array.
  */
 export function calculateTotalScore(
   userSelections: Record<string, string>,
-  masterResults: Record<string, string>,
-  games: any[]
+  games: { id: string, round: number, winner_id?: string | null }[]
 ): number {
   let score = 0;
 
   games.forEach(game => {
     const userWinner = userSelections[game.id];
-    const actualWinner = masterResults[game.id];
+    const actualWinner = game.winner_id;
 
     if (userWinner && actualWinner && userWinner === actualWinner) {
       score += ROUND_WEIGHTS[game.round] || 0;

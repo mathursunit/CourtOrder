@@ -1,8 +1,9 @@
-import React from 'react';
-import { useBracketStore } from '../../store/useBracketStore';
-import type { Team } from '../../hooks/useTournament';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Trophy } from 'lucide-react';
+import type { Team } from '../../hooks/useTournament';
+import { useBracketStore } from '../../store/useBracketStore';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -10,55 +11,85 @@ function cn(...inputs: ClassValue[]) {
 
 interface MatchupProps {
   gameId: string;
-  team1: Team | undefined;
-  team2: Team | undefined;
+  teamA?: Team;
+  teamB?: Team;
+  winnerId?: string; // For master results display
+  isMaster?: boolean;
 }
 
-export const Matchup: React.FC<MatchupProps> = ({ gameId, team1, team2 }) => {
+export function Matchup({ gameId, teamA, teamB, winnerId, isMaster }: MatchupProps) {
   const { selections, setPick } = useBracketStore();
-  const selectedId = selections[gameId];
+  const userPick = selections[gameId];
 
   const handlePick = (teamId: string) => {
+    if (isMaster) return; // Can't pick in master view
     setPick(gameId, teamId);
   };
 
+  const renderTeam = (team: Team | undefined, isBottom: boolean) => {
+    const isSelected = userPick === team?.id;
+    const isMasterWinner = isMaster && winnerId === team?.id;
+    const isCorrect = !isMaster && winnerId && userPick === winnerId && isSelected;
+    const isWrong = !isMaster && winnerId && userPick !== winnerId && isSelected;
+
+    return (
+      <motion.button
+        whileHover={team ? { x: 4 } : {}}
+        onClick={() => team && handlePick(team.id)}
+        disabled={!team || isMaster}
+        className={cn(
+          "w-full flex items-center justify-between p-3 transition-all duration-200 group relative overflow-hidden",
+          isBottom ? "border-t border-glass-border" : "",
+          isSelected ? "bg-brand/10" : "hover:bg-brand/5",
+          !team && "opacity-40 cursor-not-allowed"
+        )}
+      >
+        <div className="flex items-center gap-3 z-10">
+          <span className={cn(
+            "text-xs font-bold w-5",
+            isSelected ? "text-brand" : "text-slate-500"
+          )}>
+            {team?.seed || '—'}
+          </span>
+          <span className={cn(
+            "text-sm font-semibold transition-colors",
+            isSelected ? "text-brand" : "text-slate-200"
+          )}>
+            {team?.name || 'TBD'}
+          </span>
+        </div>
+
+        <AnimatePresence>
+          {(isSelected || isMasterWinner) && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="z-10"
+            >
+              <Trophy className={cn(
+                "w-4 h-4",
+                isCorrect ? "text-emerald-400" : isWrong ? "text-rose-500" : "text-brand"
+              )} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Selection Glow Indicator */}
+        {isSelected && (
+          <motion.div 
+            layoutId={`glow-${gameId}`}
+            className="absolute inset-0 bg-brand/5 pointer-events-none"
+          />
+        )}
+      </motion.button>
+    );
+  };
+
   return (
-    <div className="flex flex-col gap-1 p-2 glass-card border-white/5 w-full hover:border-sports-accent/30 transition-all group">
-      <div 
-        onClick={() => team1 && handlePick(team1.id)}
-        className={cn(
-          "flex items-center justify-between p-2 rounded cursor-pointer transition-all",
-          selectedId === team1?.id ? "bg-sports-accent/20 border border-sports-accent" : "hover:bg-white/5",
-          !team1 && "opacity-30 cursor-not-allowed"
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-slate-500 w-4">{team1?.seed}</span>
-          <span className={cn("text-xs font-bold uppercase", selectedId === team1?.id ? "text-sports-accent" : "text-slate-200")}>
-            {team1?.name || "TBD"}
-          </span>
-        </div>
-        {selectedId === team1?.id && <div className="w-1.5 h-1.5 rounded-full bg-sports-accent shadow-[0_0_8px_#00F5FF]" />}
-      </div>
-
-      <div className="h-px bg-white/5 mx-2" />
-
-      <div 
-        onClick={() => team2 && handlePick(team2.id)}
-        className={cn(
-          "flex items-center justify-between p-2 rounded cursor-pointer transition-all",
-          selectedId === team2?.id ? "bg-sports-accent/20 border border-sports-accent" : "hover:bg-white/5",
-          !team2 && "opacity-30 cursor-not-allowed"
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-slate-500 w-4">{team2?.seed}</span>
-          <span className={cn("text-xs font-bold uppercase", selectedId === team2?.id ? "text-sports-accent" : "text-slate-200")}>
-            {team2?.name || "TBD"}
-          </span>
-        </div>
-        {selectedId === team2?.id && <div className="w-1.5 h-1.5 rounded-full bg-sports-accent shadow-[0_0_8px_#00F5FF]" />}
-      </div>
+    <div className="glass-card overflow-hidden w-64 shadow-2xl border-glass-border hover:border-brand/30 transition-colors">
+      {renderTeam(teamA, false)}
+      {renderTeam(teamB, true)}
     </div>
   );
-};
+}

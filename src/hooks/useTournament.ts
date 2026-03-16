@@ -13,14 +13,16 @@ export interface Game {
   id: string;
   round: number;
   region: string;
-  team_1_id: string;
-  team_2_id: string;
+  teamA_id?: string | null;
+  teamB_id?: string | null;
+  childA_id?: string | null; // ID of the game that produces teamA
+  childB_id?: string | null; // ID of the game that produces teamB
   winner_id: string | null;
   slot_index: number;
 }
 
 export function useTournament(year: string = '2026') {
-  const [teams, setTeams] = useState<Record<string, Team>>({});
+  const [teams, setTeams] = useState<Team[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,11 +31,11 @@ export function useTournament(year: string = '2026') {
     const gamesRef = collection(db, 'tournaments', year, 'games');
 
     const unsubTeams = onSnapshot(teamsRef, (snapshot) => {
-      const teamsMap: Record<string, Team> = {};
+      const teamsList: Team[] = [];
       snapshot.forEach(doc => {
-        teamsMap[doc.id] = doc.data() as Team;
+        teamsList.push(doc.data() as Team);
       });
-      setTeams(teamsMap);
+      setTeams(teamsList);
     });
 
     const unsubGames = onSnapshot(query(gamesRef, orderBy('round'), orderBy('slot_index')), (snapshot) => {

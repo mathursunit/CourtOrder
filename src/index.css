@@ -1,36 +1,65 @@
 @import "tailwindcss";
 
 @theme {
-  --color-sports-navy: #0A192F;
-  --color-sports-slate: #112240;
-  --color-sports-accent: #00F5FF;
-  --color-sports-success: #39FF14;
-  --color-sports-error: #FF3131;
-  --color-sports-orange: #FF8C00;
+  --color-brand: #00f2ff;
+  --color-accent: #ff0055;
+  --color-surface: #0a0a0c;
+  --color-surface-soft: #112240;
+  --color-glass: rgba(16, 32, 64, 0.6);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+  
+  --font-display: "Lexend", "Outfit", sans-serif;
+  --font-body: "Inter", sans-serif;
 
-  --font-lexend: "Lexend", sans-serif;
-
-  --background-image-grid-pattern: radial-gradient(circle, #1d2d44 1px, transparent 1px);
+  --shadow-neon: 0 0 15px rgba(0, 242, 255, 0.3);
+  --shadow-neon-strong: 0 0 25px rgba(0, 242, 255, 0.5);
 }
 
 @layer base {
   body {
-    @apply bg-sports-navy text-slate-100 font-lexend antialiased;
-    background-image: var(--background-image-grid-pattern);
-    background-size: 30px 30px;
+    @apply bg-surface text-slate-100 font-body antialiased selection:bg-brand/30;
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(0, 242, 255, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 0% 100%, rgba(255, 0, 85, 0.04) 0%, transparent 40%);
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, .font-display {
+    @apply font-display tracking-tight uppercase;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-sports-slate/40 backdrop-blur-md border border-white/10 rounded-xl;
+    @apply bg-glass backdrop-blur-xl border border-glass-border rounded-2xl;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
   }
 
-  .neon-border {
-    @apply border border-sports-accent shadow-[0_0_10px_rgba(0,245,255,0.3)];
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:border-brand/40 hover:bg-brand/[0.03];
   }
 
   .btn-primary {
-    @apply bg-sports-accent text-sports-navy font-bold py-2 px-6 rounded-lg transition-all hover:scale-105 hover:shadow-[0_0_15px_rgba(0,245,255,0.5)] active:scale-95;
+    @apply px-6 py-2 bg-brand text-slate-900 font-bold rounded-lg transition-all hover:scale-105 hover:shadow-neon active:scale-95 disabled:opacity-50;
   }
+
+  .btn-secondary {
+    @apply px-6 py-2 bg-slate-800 text-slate-100 font-medium rounded-lg border border-slate-700 transition-all hover:bg-slate-700 active:scale-95;
+  }
+
+  .neon-text {
+    @apply text-brand drop-shadow-[0_0_8px_rgba(0,242,255,0.5)];
+  }
+  
+  .neon-border {
+    @apply border-brand shadow-neon;
+  }
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
