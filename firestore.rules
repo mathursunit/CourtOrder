@@ -2,28 +2,18 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Tournament data is public
-    match /tournaments/{tournamentId} {
+    // 100% Public Access for all tournament data to debug visibility
+    match /{path=**} {
       allow read: if true;
       allow write: if request.auth != null;
-      
-      match /teams/{teamId} {
-        allow read, write: if true;
-      }
-      
-      match /games/{gameId} {
-        allow read: if true;
-        allow write: if request.auth != null;
-      }
     }
-
-    // User data and brackets
+    
     match /users/{userId} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
       
       match /brackets/{year} {
-        allow read: if true; // Brackets are public for the leaderboard
+        allow read: if true;
         allow write: if request.auth != null && request.auth.uid == userId;
       }
     }

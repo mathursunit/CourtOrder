@@ -8,7 +8,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { calculateTotalScore } from './lib/scoring';
 import Admin from './pages/Admin';
-import Leaderboard from './pages/Leaderboard';
+import Standings from './pages/Standings';
 import { RankingsSidebar } from './components/bracket/RankingsSidebar';
 import { FullBracketView } from './components/bracket/FullBracketView';
 import { clsx, type ClassValue } from 'clsx';
@@ -144,7 +144,7 @@ function App() {
 
       <main className="flex-1">
         {view === 'admin' ? <Admin /> : 
-         view === 'leaderboard' ? <Leaderboard /> :
+         view === 'leaderboard' ? <Standings /> :
          view === 'dashboard' || view === 'history' ? (
            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
              <Trophy className="w-16 h-16 text-brand/20" />
@@ -270,7 +270,7 @@ function App() {
         <div className="flex items-center gap-2">
           <span className="text-emerald-500">SYSTEM READY</span>
           <span className="w-1 h-1 bg-emerald-500 rounded-full" />
-           <span>V4.2.5-STITCH</span>
+           <span>V4.2.6-FORCED</span>
         </div>
       </footer>
     </div>
