@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Trophy, TrendingUp, User as UserIcon } from 'lucide-react';
 import { calculateTotalScore } from '../lib/scoring';
@@ -16,61 +16,51 @@ export default function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [debugLog, setDebugLog] = useState<string>("Initializing...");
-  const [envInfo, setEnvInfo] = useState<string>("");
   const { games } = useTournament();
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const projId = (db as any)._databaseId?.projectId || "Unknown";
-        setEnvInfo(`Project: ${projId}`);
-        setDebugLog("Connecting to Firebase...");
+        setDebugLog("Connecting to Broadcast Feed...");
         
-        const usersRef = collection(db, 'users');
-        const querySnapshot = await getDocs(usersRef);
+        // Use the Consolidated Public Mirror to bypass permission issues
+        const leaderboardRef = doc(db, 'tournaments', '2026', 'public', 'leaderboard');
+        const snap = await getDoc(leaderboardRef);
         
-        setDebugLog(`Query complete. Found: ${querySnapshot.docs.length} users`);
-        
-        if (querySnapshot.empty) {
-          setDebugLog(`Empty collection 'users' at Project: ${projId}`);
-        }
-
-        const allEntries: LeaderboardEntry[] = [];
-        
-        for (const userDoc of querySnapshot.docs) {
-          const userData = userDoc.data();
-          const bracketRef = collection(db, 'users', userDoc.id, 'brackets');
-          const bracketSnap = await getDocs(bracketRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          const rawEntries = data.entries || [];
+          setDebugLog(`Feed Sync Complete. Entries: ${rawEntries.length}`);
           
-          let foundBracket = false;
-          bracketSnap.forEach(doc => {
-            if (doc.id === '2026') {
-              foundBracket = true;
-              const data = doc.data();
-              const score = calculateTotalScore(data.selections || {}, games);
-              allEntries.push({
-                userId: userDoc.id,
-                userName: data.userName || userData.displayName || 'Anonymous',
-                picks: data.selections || {},
-                score: score
-              });
-            }
-          });
-
-          if (!foundBracket) {
-             allEntries.push({
-                userId: userDoc.id,
-                userName: userData.displayName || 'Anonymous',
-                picks: {},
-                score: 0
-             });
+          // Re-calculate scores locally with current games data
+          const calculatedEntries = rawEntries.map((e: any) => ({
+             ...e,
+             score: calculateTotalScore(e.picks || {}, games)
+          }));
+          
+          setEntries(calculatedEntries.sort((a: any, b: any) => b.score - a.score));
+        } else {
+          setDebugLog("Broadcast Feed not found. Checking Fallback...");
+          // Fallback to direct collection query if public mirror isn't ready
+          const usersRef = collection(db, 'users');
+          const querySnapshot = await getDocs(usersRef);
+          
+          const allEntries: LeaderboardEntry[] = [];
+          for (const userDoc of querySnapshot.docs) {
+            const userData = userDoc.data();
+            allEntries.push({
+              userId: userDoc.id,
+              userName: userData.displayName || 'Anonymous',
+              picks: {},
+              score: 0
+            });
           }
+          setEntries(allEntries);
+          setDebugLog(`Fallback Query: ${querySnapshot.docs.length} found`);
         }
-
-        setEntries(allEntries.sort((a, b) => b.score - a.score));
       } catch (err: any) {
         console.error("Leaderboard error:", err);
-        setDebugLog(`Error: ${err.message || 'Unknown error'}`);
+        setDebugLog(`ERROR: ${err.message || 'PERMISSION DENIED'}`);
       } finally {
         setLoadingEntries(false);
       }
@@ -83,7 +73,7 @@ export default function Leaderboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-400 font-medium italic">Calculating Global Standings...</p>
+        <p className="text-slate-400 font-medium italic">Syncing with Tournament Feed...</p>
         <p className="text-[10px] text-brand/40 uppercase font-black">{debugLog}</p>
       </div>
     );
@@ -96,8 +86,8 @@ export default function Leaderboard() {
           <Trophy className="w-8 h-8 text-brand" />
         </div>
         <div>
-          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.8</h1>
-          <p className="text-slate-400 font-medium">Project: {envInfo.split(': ')[1] || 'Loading...'} | Official 2026 March Madness Rankings</p>
+          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.9</h1>
+          <p className="text-slate-400 font-medium italic">Official 2026 March Madness Standings</p>
         </div>
       </div>
 
@@ -160,4 +150,3 @@ export default function Leaderboard() {
     </div>
   );
 }
-
