@@ -21,12 +21,19 @@ function cn(...inputs: ClassValue[]) {
 type ViewMode = 'bracket' | 'leaderboard' | 'admin' | 'dashboard' | 'history';
 
 function App() {
-  const [view, setView] = useState<ViewMode>('bracket');
+  const [view, setView] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('courtorder_view');
+    return (saved as ViewMode) || 'bracket';
+  });
   const { user, login, logout } = useAuthStore();
   const { selections, setSelections } = useBracketStore();
   const { teams, games, loading } = useTournament();
   const [activeRegion, setActiveRegion] = useState('East');
   const [isFullView, setIsFullView] = useState(true);
+
+  useEffect(() => {
+    localStorage.setItem('courtorder_view', view);
+  }, [view]);
 
   useEffect(() => {
     if (!user) return;
