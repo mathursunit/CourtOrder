@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Trophy, Zap, LogOut, ChevronRight } from 'lucide-react';
+import { Trophy, LogOut } from 'lucide-react';
 import { useBracketStore } from './store/useBracketStore';
 import { useAuthStore } from './store/useAuthStore';
 import { useTournament } from './hooks/useTournament';
