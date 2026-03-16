@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Matchup } from './Matchup';
 import type { Game, Team } from '../../hooks/useTournament';
+import { Trophy } from 'lucide-react';
 
 interface FullBracketViewProps {
   games: Game[];
@@ -15,11 +16,6 @@ export function FullBracketView({ games, teams, selections }: FullBracketViewPro
   };
 
   const getGames = (side: 'left' | 'right' | 'center', round: number) => {
-    // Mapping logic: 
-    // Left: East & South regions
-    // Right: West & Midwest regions
-    // Center: Final Four (R5) and Championship (R6)
-    
     if (side === 'center') {
        return games.filter(g => g.round === round && (g.region?.toLowerCase() === 'final four' || !g.region));
     }
@@ -40,14 +36,13 @@ export function FullBracketView({ games, teams, selections }: FullBracketViewPro
           const teamB = getTeamById(selections[game.childB_id || ''] || game.teamB_id);
           
           return (
-             <div key={game.id} className="relative">
+             <div key={game.id} className="relative group">
                 <Matchup 
                   gameId={game.id} 
                   teamA={teamA} 
                   teamB={teamB} 
                   winnerId={game.winner_id || undefined}
                 />
-                {/* Connectors would go here, matching the image's diagonal style */}
              </div>
           );
         })}
@@ -60,72 +55,93 @@ export function FullBracketView({ games, teams, selections }: FullBracketViewPro
   const finalFourRight = useMemo(() => games.find(g => g.round === 5 && g.slot_index === 1), [games]);
 
   return (
-    <div className="flex items-stretch justify-between w-full min-w-[1600px] h-full px-4 overflow-x-auto scrollbar-hide py-12 bg-surface/40 backdrop-blur-3xl rounded-3xl border border-glass-border">
-      {/* LEFT HALF */}
-      <div className="flex gap-16">
-        {/* Round 1 (L) */}
-        {renderRound('left', 1)}
-        {/* Round 2 (L) */}
-        {renderRound('left', 2)}
-        {/* Sweet 16 (L) */}
-        {renderRound('left', 3)}
-        {/* Elite 8 (L) */}
-        {renderRound('left', 4)}
-      </div>
+    <div className="relative w-full min-w-[1600px] h-full px-8 py-12 bg-surface/40 backdrop-blur-3xl rounded-[3rem] border border-glass-border overflow-x-auto scrollbar-hide select-none">
+      <div className="flex items-stretch justify-between h-full">
+        {/* LEFT HALF: EAST & SOUTH */}
+        <div className="flex gap-16 relative">
+          <div className="absolute -top-6 left-0 flex flex-col gap-1">
+             <span className="text-[10px] font-black text-brand uppercase tracking-[0.3em]">Conferences</span>
+             <h3 className="text-xl font-display font-black text-white italic">EAST / SOUTH</h3>
+          </div>
+          {renderRound('left', 1)}
+          {renderRound('left', 2)}
+          {renderRound('left', 3)}
+          {renderRound('left', 4)}
+        </div>
 
-      {/* CENTER: FINAL FOUR & CHAMPIONSHIP */}
-      <div className="flex flex-col items-center justify-center gap-12 w-96">
-        <div className="flex flex-col items-center gap-6">
-          <span className="text-[10px] font-black text-brand uppercase tracking-[0.4em]">Final Four</span>
-          <div className="flex gap-4">
-             {finalFourLeft && (
-                <Matchup 
-                   gameId={finalFourLeft.id} 
-                   teamA={getTeamById(selections[finalFourLeft.childA_id || ''] || finalFourLeft.teamA_id)}
-                   teamB={getTeamById(selections[finalFourLeft.childB_id || ''] || finalFourLeft.teamB_id)}
-                   winnerId={finalFourLeft.winner_id || undefined}
-                />
-             )}
-             {finalFourRight && (
-                <Matchup 
-                   gameId={finalFourRight.id} 
-                   teamA={getTeamById(selections[finalFourRight.childA_id || ''] || finalFourRight.teamA_id)}
-                   teamB={getTeamById(selections[finalFourRight.childB_id || ''] || finalFourRight.teamB_id)}
-                   winnerId={finalFourRight.winner_id || undefined}
-                />
-             )}
+        {/* CENTER: CHAMPIONSHIP PODIUM */}
+        <div className="flex flex-col items-center justify-center gap-16 w-[400px] relative z-10">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center opacity-[0.03] pointer-events-none">
+             <Trophy className="w-[400px] h-[400px] text-white" />
+          </div>
+
+          <div className="flex flex-col items-center gap-8">
+            <div className="flex flex-col items-center gap-2">
+               <span className="text-[9px] font-black text-brand uppercase tracking-[0.5em] animate-pulse">Semifinal Alpha</span>
+               <div className="h-[2px] w-12 bg-brand/30 mb-2" />
+               {finalFourLeft && (
+                  <Matchup 
+                     gameId={finalFourLeft.id} 
+                     teamA={getTeamById(selections[finalFourLeft.childA_id || ''] || finalFourLeft.teamA_id)}
+                     teamB={getTeamById(selections[finalFourLeft.childB_id || ''] || finalFourLeft.teamB_id)}
+                     winnerId={finalFourLeft.winner_id || undefined}
+                  />
+               )}
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-8 relative">
+             <div className="absolute -top-12 -left-12 -right-12 -bottom-12 bg-brand/5 blur-3xl rounded-full animate-pulse" />
+             <div className="flex flex-col items-center gap-6 relative z-10">
+                <div className="px-6 py-1.5 rounded-full bg-accent text-[10px] font-black text-white uppercase tracking-[0.4em] shadow-warm mb-2">Championship</div>
+                {championshipGame && (
+                   <div className="scale-125 transform transition-transform hover:scale-150 duration-500">
+                      <Matchup 
+                         gameId={championshipGame.id} 
+                         teamA={getTeamById(selections[championshipGame.childA_id || ''] || championshipGame.teamA_id)}
+                         teamB={getTeamById(selections[championshipGame.childB_id || ''] || championshipGame.teamB_id)}
+                         winnerId={championshipGame.winner_id || undefined}
+                      />
+                   </div>
+                )}
+                <div className="mt-16 flex flex-col items-center group cursor-pointer">
+                   <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 relative overflow-hidden group-hover:border-brand/40 transition-colors">
+                      <div className="absolute inset-0 bg-gradient-to-t from-brand/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <img src="https://www.ncaa.com/modules/custom/ncaa_mm_bracket/images/logo_mm.png" className="w-16 opacity-40 grayscale invert relative z-10 group-hover:opacity-100 group-hover:grayscale-0 group-hover:scale-110 transition-all" />
+                   </div>
+                   <h3 className="text-4xl font-display font-black text-white italic tracking-tighter group-hover:text-brand transition-colors">THE CROWN</h3>
+                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] mt-2">MARCH MADNESS 2026</span>
+                </div>
+             </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-8">
+             <div className="flex flex-col items-center gap-2">
+                <span className="text-[9px] font-black text-brand uppercase tracking-[0.5em] animate-pulse">Semifinal Beta</span>
+                <div className="h-[2px] w-12 bg-brand/30 mb-2" />
+                {finalFourRight && (
+                   <Matchup 
+                      gameId={finalFourRight.id} 
+                      teamA={getTeamById(selections[finalFourRight.childA_id || ''] || finalFourRight.teamA_id)}
+                      teamB={getTeamById(selections[finalFourRight.childB_id || ''] || finalFourRight.teamB_id)}
+                      winnerId={finalFourRight.winner_id || undefined}
+                   />
+                )}
+             </div>
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-6 mt-12 scale-110">
-           <span className="text-xs font-black text-accent uppercase tracking-[0.5em] animate-pulse">Championship</span>
-           {championshipGame && (
-              <Matchup 
-                 gameId={championshipGame.id} 
-                 teamA={getTeamById(selections[championshipGame.childA_id || ''] || championshipGame.teamA_id)}
-                 teamB={getTeamById(selections[championshipGame.childB_id || ''] || championshipGame.teamB_id)}
-                 winnerId={championshipGame.winner_id || undefined}
-              />
-           )}
-           <div className="mt-8 flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-brand/10 border border-brand/30 flex items-center justify-center mb-4">
-                 <img src="https://www.ncaa.com/modules/custom/ncaa_mm_bracket/images/logo_mm.png" className="w-10 opacity-50 grayscale invert" />
-              </div>
-              <h3 className="text-2xl font-display font-black text-white italic tracking-tighter">WINNER</h3>
-           </div>
+        {/* RIGHT HALF: WEST & MIDWEST */}
+        <div className="flex gap-16 flex-row-reverse relative">
+          <div className="absolute -top-6 right-0 flex flex-col gap-1 items-end">
+             <span className="text-[10px] font-black text-brand uppercase tracking-[0.3em]">Conferences</span>
+             <h3 className="text-xl font-display font-black text-white italic">WEST / MIDWEST</h3>
+          </div>
+          {renderRound('right', 1)}
+          {renderRound('right', 2)}
+          {renderRound('right', 3)}
+          {renderRound('right', 4)}
         </div>
-      </div>
-
-      {/* RIGHT HALF */}
-      <div className="flex gap-16 flex-row-reverse">
-        {/* Round 1 (R) */}
-        {renderRound('right', 1)}
-        {/* Round 2 (R) */}
-        {renderRound('right', 2)}
-        {/* Sweet 16 (R) */}
-        {renderRound('right', 3)}
-        {/* Elite 8 (R) */}
-        {renderRound('right', 4)}
       </div>
     </div>
   );

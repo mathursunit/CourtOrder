@@ -17,10 +17,15 @@ service cloud.firestore {
       }
     }
 
-    // User brackets
-    match /users/{userId}/brackets/{year} {
-      allow read: if true; // Brackets are public for the leaderboard
+    // User data and brackets
+    match /users/{userId} {
+      allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
+      
+      match /brackets/{year} {
+        allow read: if true; // Brackets are public for the leaderboard
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
     }
   }
 }

@@ -18,11 +18,16 @@ export default function Leaderboard() {
   const { games } = useTournament();
 
   useEffect(() => {
+    // If no games, we can't calculate scores yet, but we should still fetch users
+    // This handles the case where games might be loading but we want to show the list
     const fetchLeaderboard = async () => {
       try {
+        console.log("Leaderboard: Initiating fetch...");
+        // Use onSnapshot for real-time leaderboard updates
         const usersRef = collection(db, 'users');
         const querySnapshot = await getDocs(usersRef);
-        console.log(`Leaderboard: Found ${querySnapshot.docs.length} users`);
+        
+        console.log(`Leaderboard: Found ${querySnapshot.docs.length} base users`);
         
         const allEntries: LeaderboardEntry[] = [];
         
@@ -30,11 +35,12 @@ export default function Leaderboard() {
           const bracketRef = collection(db, 'users', userDoc.id, 'brackets');
           const bracketSnap = await getDocs(bracketRef);
           
+          let foundBracket = false;
           bracketSnap.forEach(doc => {
             if (doc.id === '2026') {
+              foundBracket = true;
               const data = doc.data();
               const score = calculateTotalScore(data.selections || {}, games);
-              console.log(`User ${data.userName || userDoc.id}: Score ${score}`);
               allEntries.push({
                 userId: userDoc.id,
                 userName: data.userName || 'Anonymous',
@@ -43,20 +49,29 @@ export default function Leaderboard() {
               });
             }
           });
+
+          // Fallback for users without a 2026 bracket yet but in the system
+          if (!foundBracket) {
+             const userData = userDoc.data();
+             allEntries.push({
+                userId: userDoc.id,
+                userName: userData.displayName || 'Anonymous',
+                picks: {},
+                score: 0
+             });
+          }
         }
 
-        // Sort by score descending
+        console.log(`Leaderboard: Processed ${allEntries.length} entries`);
         setEntries(allEntries.sort((a, b) => b.score - a.score));
       } catch (err) {
-        console.error("Error fetching leaderboard:", err);
+        console.error("Leaderboard error:", err);
       } finally {
         setLoadingEntries(false);
       }
     };
 
-    if (games.length > 0) {
-      fetchLeaderboard();
-    }
+    fetchLeaderboard();
   }, [games]);
 
   if (loadingEntries) {
