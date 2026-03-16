@@ -36,3 +36,10 @@ Ensure your DNS settings have a CNAME record:
 2. `npm install`
 3. Create a `.env.local` file using `.env.example`.
 4. `npm run dev`
+
+## 🤖 Score Automation (ScoreBot)
+The application includes a background service to auto-populate winners:
+1. Generate a **Service Account JSON** in [Firebase Console](https://console.firebase.google.com/) (Project Settings > Service Accounts).
+2. Go to your GitHub Repository -> **Settings > Secrets and variables > Actions**.
+3. Add a new repository secret named `FIREBASE_SERVICE_ACCOUNT_JSON` and paste the entire JSON content.
+4. The GitHub Action in `.github/workflows/auto-update.yml` will now poll ESPN every 4 hours and update the bracket!
