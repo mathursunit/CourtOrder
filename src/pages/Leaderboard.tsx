@@ -27,7 +27,7 @@ export default function Leaderboard() {
         const usersRef = collection(db, 'users');
         const querySnapshot = await getDocs(usersRef);
         
-        console.log(`Leaderboard: Found ${querySnapshot.docs.length} base users`);
+        console.log(`[FIREBASE_DIAGNOSTIC] Total Users Found: ${querySnapshot.docs.length}`);
         
         const allEntries: LeaderboardEntry[] = [];
         
