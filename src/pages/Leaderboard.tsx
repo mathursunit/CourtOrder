@@ -142,7 +142,10 @@ export default function Leaderboard() {
             )) : (
               <tr>
                 <td colSpan={3} className="px-6 py-12 text-center text-slate-500 italic">
-                  No brackets submitted yet. Be the first to enter!
+                  <p>No brackets submitted yet. Be the first to enter!</p>
+                  <p className="text-[9px] mt-4 opacity-30 uppercase font-black tracking-widest">
+                    Diagnostic: Discovered {entries.length} contestants in registry
+                  </p>
                 </td>
               </tr>
             )}
