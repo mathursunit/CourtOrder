@@ -149,6 +149,3 @@ export default function Leaderboard() {
   );
 }
 
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
-}
