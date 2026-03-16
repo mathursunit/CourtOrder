@@ -1,17 +1,53 @@
-import { useState } from 'react';
-import { Trophy, Users, Settings, ChevronRight, ChevronLeft, Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Trophy, Users, Settings, ChevronRight, ChevronLeft, Zap, LogOut, LogIn } from 'lucide-react';
 import { useBracketStore } from './store/useBracketStore';
+import { useAuthStore } from './store/useAuthStore';
 import { useTournament } from './hooks/useTournament';
 import { Matchup } from './components/bracket/Matchup';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from './lib/firebase';
 import Admin from './pages/Admin';
 
 type ViewMode = 'bracket' | 'admin';
 
 function App() {
   const [view, setView] = useState<ViewMode>('bracket');
-  const { selections, resetBracket, setPick } = useBracketStore();
+  const { user, login, logout } = useAuthStore();
+  const { selections, resetBracket, setPick, setSelections } = useBracketStore();
   const { teams, games, loading } = useTournament();
   const [activeRegion, setActiveRegion] = useState('East');
+
+  // Load user bracket on login
+  useEffect(() => {
+    if (!user) return;
+    const loadBracket = async () => {
+      const docRef = doc(db, 'users', user.uid, 'brackets', '2026');
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.selections && Object.keys(data.selections).length > 0) {
+          setSelections(data.selections);
+        }
+      }
+    };
+    loadBracket();
+  }, [user, setSelections]);
+
+  // Auto-save bracket on change
+  useEffect(() => {
+    if (!user || Object.keys(selections).length === 0) return;
+    const saveBracket = async () => {
+      const docRef = doc(db, 'users', user.uid, 'brackets', '2026');
+      await setDoc(docRef, {
+        selections,
+        lastUpdated: serverTimestamp(),
+        userName: user.displayName,
+        userId: user.uid
+      }, { merge: true });
+    };
+    const timer = setTimeout(saveBracket, 2000); // 2s debounce
+    return () => clearTimeout(timer);
+  }, [selections, user]);
 
   const regions = ['East', 'West', 'South', 'Midwest'];
 
@@ -82,6 +118,29 @@ function App() {
           >
             ADMIN
           </button>
+          {user ? (
+            <div className="flex items-center gap-4 pl-4 border-l border-white/10">
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-bold text-white uppercase">{user.displayName}</span>
+                <span className="text-[10px] text-sports-accent font-medium">RANK #--</span>
+              </div>
+              <button 
+                onClick={() => logout()}
+                className="p-1.5 rounded-full hover:bg-white/5 transition-colors group"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4 text-slate-400 group-hover:text-sports-error" />
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => login()}
+              className="flex items-center gap-2 px-4 py-2 bg-sports-accent/10 border border-sports-accent/30 rounded-lg hover:bg-sports-accent/20 transition-all group"
+            >
+              <LogIn className="w-4 h-4 text-sports-accent" />
+              <span className="text-xs font-bold text-sports-accent uppercase">Sign In</span>
+            </button>
+          )}
         </nav>
 
         <div className="flex items-center gap-4">

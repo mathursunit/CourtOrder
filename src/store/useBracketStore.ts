@@ -40,6 +40,7 @@ GAME_TREE['semi-r5-g2'] = 'final-r6-g1';
 interface BracketState {
   selections: Record<string, string>; // gameId -> teamId
   setPick: (gameId: string, teamId: string) => void;
+  setSelections: (selections: Record<string, string>) => void;
   resetBracket: () => void;
 }
 
@@ -86,6 +87,7 @@ export const useBracketStore = create<BracketState>()(
         set({ selections: currentPicks });
       },
 
+      setSelections: (selections) => set({ selections }),
       resetBracket: () => set({ selections: {} }),
     }),
     {
