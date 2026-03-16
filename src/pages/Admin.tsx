@@ -1,18 +1,24 @@
 import { useTournament } from '../hooks/useTournament';
+import { useAuthStore } from '../store/useAuthStore';
 import { doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Shield, CheckCircle, Database, AlertTriangle } from 'lucide-react';
+import { Shield, CheckCircle, Database, AlertTriangle, Lock } from 'lucide-react';
 
 export default function Admin() {
+  const { user, login } = useAuthStore();
   const { teams, games, loading } = useTournament();
 
   const handleUpdateWinner = async (gameId: string, winnerId: string) => {
     try {
       const gameRef = doc(db, 'tournaments', '2026', 'games', gameId);
       await updateDoc(gameRef, { winner_id: winnerId });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error updating result. Ensure you are signed in.");
+      if (err.code === 'permission-denied') {
+        alert("Permission Denied: You do not have administrative rights to modify the Master Feed.");
+      } else {
+        alert("Error updating result. Ensure you are signed in.");
+      }
     }
   };
 
@@ -101,7 +107,7 @@ export default function Admin() {
         batch.set(ref, t);
       });
 
-      // R1 Pairings (matching NCAA Bracket IDs logic)
+      // R1 Pairings
       const regions = ['East', 'South', 'Midwest', 'West'];
       const pairings = [[1,16], [8,9], [5,12], [4,13], [6,11], [3,14], [7,10], [2,15]];
 
@@ -121,16 +127,38 @@ export default function Admin() {
 
       await batch.commit();
       alert("Official NCAA Bracket Successfully Seeded!");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Critical Error Seeding Data.");
+      if (err.code === 'permission-denied') {
+        alert("Permission Denied: You do not have administrative rights to modify the Master Feed.");
+      } else {
+        alert("Critical Error: Seeding process failed. Please check the console.");
+      }
     }
   };
 
-  if (loading) return <div className="flex flex-col items-center justify-center min-h-[400px]">
-    <div className="w-12 h-12 border-4 border-[#00f2ff] border-t-transparent rounded-full animate-spin mb-4" />
-    <p className="text-slate-500 font-display font-black uppercase italic">Accessing NCAA Feed...</p>
-  </div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px]">
+      <div className="w-12 h-12 border-4 border-[#00f2ff] border-t-transparent rounded-full animate-spin mb-4" />
+      <p className="text-slate-500 font-display font-black uppercase italic">Accessing NCAA Feed...</p>
+    </div>
+  );
+
+  if (!user) return (
+    <div className="max-w-md mx-auto mt-20 p-12 glass-card border-rose-500/20 text-center">
+      <div className="bg-rose-500/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-rose-500/20">
+        <Lock className="w-8 h-8 text-rose-500" />
+      </div>
+      <h2 className="text-2xl font-display font-black text-white italic uppercase mb-2">Login Required</h2>
+      <p className="text-slate-400 mb-8 font-medium">You must be signed in to access the Master Feed controls and perform administrative actions.</p>
+      <button 
+        onClick={() => login()}
+        className="w-full py-4 bg-[#00f2ff] text-[#0A192F] rounded-xl font-black uppercase tracking-widest hover:scale-105 transition-transform"
+      >
+        Sign In with Google
+      </button>
+    </div>
+  );
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
