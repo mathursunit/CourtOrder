@@ -16,21 +16,23 @@ export default function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [debugLog, setDebugLog] = useState<string>("Initializing...");
+  const [envInfo, setEnvInfo] = useState<string>("");
   const { games } = useTournament();
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
+        const projId = (db as any)._databaseId?.projectId || "Unknown";
+        setEnvInfo(`Project: ${projId}`);
         setDebugLog("Connecting to Firebase...");
-        const usersRef = collection(db, 'users');
         
-        // Force server source to bypass any local cache issues
+        const usersRef = collection(db, 'users');
         const querySnapshot = await getDocs(usersRef);
         
-        setDebugLog(`Query complete. Docs: ${querySnapshot.docs.length}`);
+        setDebugLog(`Query complete. Found: ${querySnapshot.docs.length} users`);
         
         if (querySnapshot.empty) {
-          setDebugLog("Collection 'users' is empty or inaccessible.");
+          setDebugLog(`Empty collection 'users' at Project: ${projId}`);
         }
 
         const allEntries: LeaderboardEntry[] = [];
@@ -94,8 +96,8 @@ export default function Leaderboard() {
           <Trophy className="w-8 h-8 text-brand" />
         </div>
         <div>
-          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.7</h1>
-          <p className="text-slate-400 font-medium">Official 2026 March Madness Rankings</p>
+          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.8</h1>
+          <p className="text-slate-400 font-medium">Project: {envInfo.split(': ')[1] || 'Loading...'} | Official 2026 March Madness Rankings</p>
         </div>
       </div>
 
@@ -147,7 +149,7 @@ export default function Leaderboard() {
                 <td colSpan={3} className="px-6 py-24 text-center">
                   <p className="text-slate-400 italic mb-4">No brackets submitted yet. Be the first to enter!</p>
                   <div className="inline-block px-4 py-1.5 rounded-full bg-slate-800/50 border border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                    System Diagnostic: {entries.length} Contestants Loaded
+                    System Diagnostic: {debugLog}
                   </div>
                 </td>
               </tr>
