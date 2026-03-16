@@ -18,20 +18,17 @@ export default function Leaderboard() {
   const { games } = useTournament();
 
   useEffect(() => {
-    // If no games, we can't calculate scores yet, but we should still fetch users
-    // This handles the case where games might be loading but we want to show the list
     const fetchLeaderboard = async () => {
       try {
-        console.log("Leaderboard: Initiating fetch...");
-        // Use onSnapshot for real-time leaderboard updates
+        console.log("[DEBUG] Leaderboard: Initiating fetch...");
         const usersRef = collection(db, 'users');
         const querySnapshot = await getDocs(usersRef);
-        
-        console.log(`[FIREBASE_DIAGNOSTIC] Total Users Found: ${querySnapshot.docs.length}`);
+        console.log(`[DEBUG] Leaderboard: Found ${querySnapshot.docs.length} users in registry`);
         
         const allEntries: LeaderboardEntry[] = [];
         
         for (const userDoc of querySnapshot.docs) {
+          const userData = userDoc.data();
           const bracketRef = collection(db, 'users', userDoc.id, 'brackets');
           const bracketSnap = await getDocs(bracketRef);
           
@@ -43,16 +40,14 @@ export default function Leaderboard() {
               const score = calculateTotalScore(data.selections || {}, games);
               allEntries.push({
                 userId: userDoc.id,
-                userName: data.userName || 'Anonymous',
+                userName: data.userName || userData.displayName || 'Anonymous',
                 picks: data.selections || {},
                 score: score
               });
             }
           });
 
-          // Fallback for users without a 2026 bracket yet but in the system
           if (!foundBracket) {
-             const userData = userDoc.data();
              allEntries.push({
                 userId: userDoc.id,
                 userName: userData.displayName || 'Anonymous',
@@ -62,7 +57,6 @@ export default function Leaderboard() {
           }
         }
 
-        console.log(`Leaderboard: Processed ${allEntries.length} entries`);
         setEntries(allEntries.sort((a, b) => b.score - a.score));
       } catch (err) {
         console.error("Leaderboard error:", err);
@@ -90,12 +84,12 @@ export default function Leaderboard() {
           <Trophy className="w-8 h-8 text-brand" />
         </div>
         <div>
-          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter">Global Leaderboard</h1>
-          <p className="text-slate-400 font-medium">2026 March Madness Tournament</p>
+          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.5</h1>
+          <p className="text-slate-400 font-medium">Official 2026 March Madness Rankings</p>
         </div>
       </div>
 
-      <div className="glass-card overflow-hidden">
+      <div className="glass-card overflow-hidden border border-white/5">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-white/5">
@@ -109,10 +103,9 @@ export default function Leaderboard() {
               <tr key={entry.userId} className="group hover:bg-brand/[0.02] transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <span className={cn(
-                      "text-xl font-black italic",
+                    <span className={`text-xl font-black italic ${
                       index === 0 ? "text-yellow-400" : index === 1 ? "text-slate-300" : index === 2 ? "text-amber-600" : "text-slate-500"
-                    )}>
+                    }`}>
                       #{index + 1}
                     </span>
                     {index < 3 && <TrendingUp className="w-4 h-4 text-brand animate-pulse" />}
@@ -141,11 +134,11 @@ export default function Leaderboard() {
               </tr>
             )) : (
               <tr>
-                <td colSpan={3} className="px-6 py-12 text-center text-slate-500 italic">
-                  <p>No brackets submitted yet. Be the first to enter!</p>
-                  <p className="text-[9px] mt-4 opacity-30 uppercase font-black tracking-widest">
-                    Diagnostic: Discovered {entries.length} contestants in registry
-                  </p>
+                <td colSpan={3} className="px-6 py-24 text-center">
+                  <p className="text-slate-400 italic mb-4">No brackets submitted yet. Be the first to enter!</p>
+                  <div className="inline-block px-4 py-1.5 rounded-full bg-slate-800/50 border border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                    System Diagnostic: {entries.length} Contestants Loaded
+                  </div>
                 </td>
               </tr>
             )}
@@ -156,7 +149,6 @@ export default function Leaderboard() {
   );
 }
 
-// Utility to merge tailwind classes (copying from Matchup if needed or just listing it)
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
