@@ -21,8 +21,9 @@ export const useAuthStore = create<AuthState>((set) => {
     login: async () => {
       try {
         await signInWithPopup(auth, googleProvider);
-      } catch (error) {
-        console.error("Login failed:", error);
+      } catch (error: any) {
+        console.error("Login failed:", error.code, error.message);
+        alert(`Login failed: ${error.message}`);
       }
     },
     logout: async () => {

@@ -31,6 +31,11 @@ Ensure your DNS settings have a CNAME record:
    - `VITE_FIREBASE_MESSAGING_SENDER_ID`
    - `VITE_FIREBASE_APP_ID`
 
+**Crucial for Sign-In:**
+If you use a custom domain (like `courtorder.sunitmathur.com`), you **must** add it to your Firebase authorized domains:
+1. Go to **Firebase Console** > **Authentication** > **Settings** > **Authorized Domains**.
+2. Click **"Add Domain"** and enter `courtorder.sunitmathur.com`.
+
 ## Local Development
 1. Clone the repo.
 2. `npm install`
