@@ -22,6 +22,7 @@ export default function Leaderboard() {
       try {
         const usersRef = collection(db, 'users');
         const querySnapshot = await getDocs(usersRef);
+        console.log(`Leaderboard: Found ${querySnapshot.docs.length} users`);
         
         const allEntries: LeaderboardEntry[] = [];
         
@@ -33,6 +34,7 @@ export default function Leaderboard() {
             if (doc.id === '2026') {
               const data = doc.data();
               const score = calculateTotalScore(data.selections || {}, games);
+              console.log(`User ${data.userName || userDoc.id}: Score ${score}`);
               allEntries.push({
                 userId: userDoc.id,
                 userName: data.userName || 'Anonymous',

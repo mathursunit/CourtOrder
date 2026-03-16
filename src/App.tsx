@@ -10,6 +10,7 @@ import { calculateTotalScore } from './lib/scoring';
 import Admin from './pages/Admin';
 import Leaderboard from './pages/Leaderboard';
 import { RankingsSidebar } from './components/bracket/RankingsSidebar';
+import { FullBracketView } from './components/bracket/FullBracketView';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -25,6 +26,7 @@ function App() {
   const { selections, setSelections } = useBracketStore();
   const { teams, games, loading } = useTournament();
   const [activeRegion, setActiveRegion] = useState('East');
+  const [isFullView, setIsFullView] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -144,86 +146,108 @@ function App() {
            </div>
          ) : (
           <div className="h-full flex flex-col pt-6 px-8">
-            <div className="flex items-center justify-between mt-8 mb-12">
+            <div className="flex items-center justify-between mt-8 mb-8">
               <div className="flex flex-col gap-2">
                 <h2 className="text-5xl font-display font-black italic tracking-tighter text-white">MY 2026 BRACKET</h2>
                 <div className="flex items-center gap-4 mt-2">
+                   <button 
+                      onClick={() => setIsFullView(true)}
+                      className={cn(
+                        "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all border",
+                        isFullView ? "bg-brand text-surface border-brand shadow-neon" : "bg-white/5 border-white/10 text-slate-400"
+                      )}
+                    >
+                      Full Bracket
+                    </button>
                   <div className="flex bg-surface-soft p-1 rounded-xl border border-white/5">
                     {regions.map(r => (
                       <button
                         key={r}
-                        onClick={() => setActiveRegion(r)}
+                        onClick={() => { setActiveRegion(r); setIsFullView(false); }}
                         className={cn(
                           "px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
-                          activeRegion === r ? "bg-brand text-surface shadow-neon" : "text-slate-500 hover:text-white"
+                          (!isFullView && activeRegion === r) ? "bg-brand text-surface shadow-neon" : "text-slate-500 hover:text-white"
                         )}
                       >
-                        {r} Region
+                        {r}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col items-end gap-2">
-                <div className="bg-glass border border-glass-border rounded-xl px-4 py-2 flex items-center gap-3">
-                   <div className="w-4 h-4 bg-brand rounded shadow-neon" />
-                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Winning Selection</span>
-                </div>
-                <div className="bg-glass border border-glass-border rounded-xl px-4 py-2 flex items-center gap-3">
-                   <div className="w-4 h-4 bg-accent rounded shadow-warm" />
-                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tournament Result</span>
-                </div>
+              <div className="flex items-center gap-6">
+                 <div className="flex flex-col items-end gap-1 px-6 border-r border-white/10">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Filters</span>
+                    <button className="flex items-center gap-2 bg-glass px-3 py-1.5 rounded-lg border border-glass-border">
+                       <span className="text-xs font-black text-white uppercase">User selections</span>
+                       <Trophy className="w-3 h-3 text-brand" />
+                    </button>
+                 </div>
+                 <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-3">
+                       <div className="w-4 h-4 bg-brand rounded shadow-neon" />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Winning Selection</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                       <div className="w-4 h-4 bg-accent rounded shadow-warm" />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tournament Result</span>
+                    </div>
+                 </div>
               </div>
             </div>
 
             {/* THE BRACKET COMMAND CENTER */}
             <div className="flex-1 flex gap-12 overflow-hidden">
-              {/* Bracket Scroller */}
-              <div className="flex-1 overflow-x-auto pb-12 scrollbar-hide">
-                <div className="flex flex-row flex-nowrap items-stretch gap-12 min-h-[900px] w-max pt-4">
-                {[1, 2, 3, 4].map((round) => {
-                  const roundGames = getRegionGames(activeRegion, round);
-                  
-                  return (
-                    <div key={round} className="flex flex-col min-w-[280px]">
-                      <div className="mb-6">
-                        <p className="text-[9px] font-black text-brand uppercase tracking-widest opacity-60">Round {round}</p>
-                        <h4 className="text-lg font-display font-black text-white italic tracking-tight uppercase">
-                          {round === 1 ? 'Round of 64' : round === 2 ? 'Round of 32' : round === 3 ? 'Sweet 16' : 'Elite 8'}
-                        </h4>
-                      </div>
-
-                      <div className="flex-1 flex flex-col justify-around py-4">
-                        {roundGames.map((game) => {
-                          const teamA = getTeamById(selections[game.childA_id || ''] || game.teamA_id);
-                          const teamB = getTeamById(selections[game.childB_id || ''] || game.teamB_id);
-                          
-                          return (
-                            <div key={game.id} className="relative py-4 pr-12">
-                              <Matchup 
-                                gameId={game.id} 
-                                teamA={teamA} 
-                                teamB={teamB}
-                                winnerId={game.winner_id || undefined}
-                              />
-                              
-                              {/* Horizontal Connector Out */}
-                              {round < 4 && (
-                                <div className="absolute right-0 top-1/2 w-12 h-[2px] bg-brand/20 shadow-[0_0_8px_rgba(0,242,255,0.1)]" />
-                              )}
+               {isFullView ? (
+                  <FullBracketView games={games} teams={teams} selections={selections} />
+               ) : (
+                  <>
+                    <div className="flex-1 overflow-x-auto pb-12 scrollbar-hide">
+                      <div className="flex flex-row flex-nowrap items-stretch gap-12 min-h-[900px] w-max pt-4">
+                      {[1, 2, 3, 4].map((round) => {
+                        const roundGames = getRegionGames(activeRegion, round);
+                        
+                        return (
+                          <div key={round} className="flex flex-col min-w-[280px]">
+                            <div className="mb-6">
+                              <p className="text-[9px] font-black text-brand uppercase tracking-widest opacity-60">Round {round}</p>
+                              <h4 className="text-lg font-display font-black text-white italic tracking-tight uppercase">
+                                {round === 1 ? 'Round of 64' : round === 2 ? 'Round of 32' : round === 3 ? 'Sweet 16' : 'Elite 8'}
+                              </h4>
                             </div>
-                          );
-                        })}
+
+                            <div className="flex-1 flex flex-col justify-around py-4">
+                              {roundGames.map((game) => {
+                                const teamA = getTeamById(selections[game.childA_id || ''] || game.teamA_id);
+                                const teamB = getTeamById(selections[game.childB_id || ''] || game.teamB_id);
+                                
+                                return (
+                                  <div key={game.id} className="relative py-4 pr-12">
+                                    <Matchup 
+                                      gameId={game.id} 
+                                      teamA={teamA} 
+                                      teamB={teamB}
+                                      winnerId={game.winner_id || undefined}
+                                    />
+                                    
+                                    {round < 4 && (
+                                      <div className="absolute right-0 top-1/2 w-12 h-[2px] bg-brand/20 shadow-[0_0_8px_rgba(0,242,255,0.1)]" />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
                       </div>
                     </div>
-                  );
-                })}
-                </div>
-              </div>
+                  </>
+               )}
 
               {/* Sidebar - Integrated as per Gemini design */}
-              <div className="hidden lg:block">
+              <div className="hidden 2xl:block">
                 <RankingsSidebar />
               </div>
             </div>

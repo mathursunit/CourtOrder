@@ -54,9 +54,7 @@ export function useTournament(year: string = '2026') {
       });
 
       setGames(gamesList);
-      if (gamesList.length > 0) {
-        setLoading(false);
-      }
+      setLoading(false);
     });
 
     return () => {
