@@ -21,18 +21,36 @@ export default function Leaderboard() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        setDebugLog("Connecting to Broadcast Feed...");
+        setDebugLog("Fetching Broadcast Feed (Static)...");
         
-        // Use the Consolidated Public Mirror to bypass permission issues
+        // Strategy A: Fetch static JSON to bypass Firestore permissions
+        const staticResponse = await fetch('/leaderboard-data.json');
+        if (staticResponse.ok) {
+          const data = await staticResponse.json();
+          const rawEntries = data.entries || [];
+          setDebugLog(`Sync Success (Static). Entries: ${rawEntries.length}`);
+          
+          const calculatedEntries = rawEntries.map((e: any) => ({
+             ...e,
+             score: calculateTotalScore(e.picks || {}, games)
+          }));
+          
+          setEntries(calculatedEntries.sort((a: any, b: any) => b.score - a.score));
+          setLoadingEntries(false);
+          return;
+        }
+
+        setDebugLog("Static Feed failed. Trying Cloud Mirror...");
+        
+        // Strategy B: Fetch from public mirror document
         const leaderboardRef = doc(db, 'tournaments', '2026', 'public', 'leaderboard');
         const snap = await getDoc(leaderboardRef);
         
         if (snap.exists()) {
-          const data = snap.data();
+          const data = snap.data() as any;
           const rawEntries = data.entries || [];
-          setDebugLog(`Feed Sync Complete. Entries: ${rawEntries.length}`);
+          setDebugLog(`Sync Success (Cloud). Entries: ${rawEntries.length}`);
           
-          // Re-calculate scores locally with current games data
           const calculatedEntries = rawEntries.map((e: any) => ({
              ...e,
              score: calculateTotalScore(e.picks || {}, games)
@@ -40,27 +58,11 @@ export default function Leaderboard() {
           
           setEntries(calculatedEntries.sort((a: any, b: any) => b.score - a.score));
         } else {
-          setDebugLog("Broadcast Feed not found. Checking Fallback...");
-          // Fallback to direct collection query if public mirror isn't ready
-          const usersRef = collection(db, 'users');
-          const querySnapshot = await getDocs(usersRef);
-          
-          const allEntries: LeaderboardEntry[] = [];
-          for (const userDoc of querySnapshot.docs) {
-            const userData = userDoc.data();
-            allEntries.push({
-              userId: userDoc.id,
-              userName: userData.displayName || 'Anonymous',
-              picks: {},
-              score: 0
-            });
-          }
-          setEntries(allEntries);
-          setDebugLog(`Fallback Query: ${querySnapshot.docs.length} found`);
+          setDebugLog("No Sync data found. Registering New Season...");
         }
       } catch (err: any) {
         console.error("Leaderboard error:", err);
-        setDebugLog(`ERROR: ${err.message || 'PERMISSION DENIED'}`);
+        setDebugLog(`FEED ERROR: ${err.message || 'Check Console'}`);
       } finally {
         setLoadingEntries(false);
       }
@@ -86,7 +88,7 @@ export default function Leaderboard() {
           <Trophy className="w-8 h-8 text-brand" />
         </div>
         <div>
-          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.9</h1>
+          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.10</h1>
           <p className="text-slate-400 font-medium italic">Official 2026 March Madness Standings</p>
         </div>
       </div>
