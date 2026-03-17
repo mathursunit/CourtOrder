@@ -10,13 +10,6 @@ const serviceAccount = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../courtorder-ef262-firebase-adminsdk-fbsvc-80918e7fd5.json'), 'utf8')
 );
 
-// We need some scoring logic here since we can't easily import from ../lib/scoring in a script
-function calculateScore(selections = {}, games = []) {
-  let score = 0;
-  // Simple scoring for now, can be improved
-  return score;
-}
-
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
@@ -24,12 +17,10 @@ admin.initializeApp({
 const db = admin.firestore();
 
 async function rebuild() {
-  console.log('Rebuilding consolidated leaderboard...');
+  console.log('Synchronizing Local standings mirror...');
   
   const usersSnap = await db.collection('users').get();
-  console.log(`Found ${usersSnap.size} users.`);
-  
-  const leaderboardEntries = [];
+  const entries = [];
   
   for (const userDoc of usersSnap.docs) {
     const userData = userDoc.data();
@@ -37,22 +28,30 @@ async function rebuild() {
     
     // Get their 2026 bracket
     const bracketSnap = await db.collection('users').doc(userDoc.id).collection('brackets').doc('2026').get();
+    const bracketData = bracketSnap.exists() ? bracketSnap.data() : { selections: {} };
     
-    leaderboardEntries.push({
+    entries.push({
       userId: userDoc.id,
       userName: displayName,
-      score: 0, // Placeholder, actual score calculated on frontend or here
-      lastUpdated: new Date().toISOString()
+      picks: bracketData.selections || {},
+      score: 0 // Frontend will calculate this
     });
   }
 
-  // Save to a PUBLIC collection
-  await db.collection('tournaments').doc('2026').collection('public').doc('leaderboard').set({
-    entries: leaderboardEntries,
-    generatedAt: admin.firestore.FieldValue.serverTimestamp()
-  });
+  const data = {
+    entries,
+    generatedAt: new Date().toISOString(),
+    version: '4.2.10'
+  };
 
-  console.log('Leaderboard consolidated to tournaments/2026/public/leaderboard');
+  // Write to public folder for static hosting bypass
+  const publicPath = path.join(__dirname, '../public/leaderboard-data.json');
+  fs.writeFileSync(publicPath, JSON.stringify(data, null, 2));
+  
+  // Also keep the Firestore mirror just in case
+  await db.collection('tournaments').doc('2026').collection('public').doc('leaderboard').set(data);
+
+  console.log(`Success! Synchronized ${entries.length} contestants to /public/leaderboard-data.json`);
 }
 
 rebuild().catch(console.error);
