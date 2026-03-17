@@ -24,11 +24,12 @@ export default function Leaderboard() {
         setDebugLog("Fetching Broadcast Feed (Static)...");
         
         // Strategy A: Fetch static JSON to bypass Firestore permissions
-        const staticResponse = await fetch('/leaderboard-data.json');
+        // Use relative path to support GH Pages subfolders
+        const staticResponse = await fetch('leaderboard-data.json');
         if (staticResponse.ok) {
           const data = await staticResponse.json();
           const rawEntries = data.entries || [];
-          setDebugLog(`Sync Success (Static). Entries: ${rawEntries.length}`);
+          setDebugLog(`Sync Success (Static). Entries: ${rawEntries.length} @ ${data.generatedAt?.substring(11, 16)}`);
           
           const calculatedEntries = rawEntries.map((e: any) => ({
              ...e,
@@ -88,7 +89,7 @@ export default function Leaderboard() {
           <Trophy className="w-8 h-8 text-brand" />
         </div>
         <div>
-          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.10</h1>
+          <h1 className="text-4xl font-display font-black text-white italic tracking-tighter uppercase">Leaderboard V4.2.11</h1>
           <p className="text-slate-400 font-medium italic">Official 2026 March Madness Standings</p>
         </div>
       </div>
