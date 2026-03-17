@@ -28,7 +28,7 @@ async function rebuild() {
     
     // Get their 2026 bracket
     const bracketSnap = await db.collection('users').doc(userDoc.id).collection('brackets').doc('2026').get();
-    const bracketData = bracketSnap.exists() ? bracketSnap.data() : { selections: {} };
+    const bracketData = bracketSnap.exists ? bracketSnap.data() : { selections: {} };
     
     entries.push({
       userId: userDoc.id,
