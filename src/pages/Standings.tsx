@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Trophy, TrendingUp, User as UserIcon } from 'lucide-react';
 import { calculateTotalScore } from '../lib/scoring';
